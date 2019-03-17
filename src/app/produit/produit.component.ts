@@ -1,5 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { ProduitMockService } from './produit.mock.service';
+import { FormGroup, FormBuilder, Validators } from '@angular/forms'
+import { ActivatedRoute } from '@angular/router';
+
+import { ProduitService } from './produit.service';
 import { Produit } from '../model/produit';
 
 @Component({
@@ -10,12 +13,69 @@ import { Produit } from '../model/produit';
 export class ProduitComponent implements OnInit {
 
   produits: Produit[];
-  constructor(private produitService: ProduitMockService) { 
 
+  produitForm: FormGroup;
+
+  operation: string = 'add';
+
+  selectedProduit: Produit;
+
+  constructor(private produitService: ProduitService, private formBuilder: FormBuilder, private route: ActivatedRoute) { 
+    this.createForm();
   }
 
   ngOnInit() {
-    this.produits = this.produitService.getProduits();
+    this.initProduit();
+    this.produits = this.route.snapshot.data.produits;
+  }
+
+  createForm() {
+    this.produitForm = this.formBuilder.group({
+      ref: ['', Validators.required],
+      quantite: '',
+      prixUnitaire: ''
+    });
+  }
+
+  loadProduits() {
+    this.produitService.getProduits().subscribe(
+      data => { this.produits = data},
+      error => { console.log('An error was occured.')},
+      () => { console.log('loading produits was done.')}
+    );
+  }
+
+  addProduit() {
+    const produit = this.produitForm.value;
+    this.produitService.addProduit(produit).subscribe(
+      res => {
+        this.initProduit();
+        this.loadProduits();
+      }
+    );
+  }
+
+  updateProduit() {
+    this.produitService.updateProduit(this.selectedProduit).subscribe(
+      res => {
+        this.initProduit();
+        this.loadProduits();
+      }
+    );
+  }
+
+  deleteProduit() {
+    this.produitService.deleteProduit(this.selectedProduit.ref).subscribe(
+      res => {
+        this.selectedProduit = new Produit();
+        this.loadProduits();
+      }
+    );
+  }
+
+  initProduit() {
+    this.selectedProduit = new Produit();
+    this.createForm();
   }
 
 }
